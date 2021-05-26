@@ -4,14 +4,14 @@ PROGRAM    = putlog
 
 BUILD       = $(shell date +'%y%m%d%H%M')
 
-CSRC       = putlog.c tinframe.c tinux.c msg.c log.c 
+CSRC       = putlog.c tinframe.c tinux.c msg.c log.c
 
 BUILDDIR   = bin
 SOURCEDIR  = src
 EXTDIR     = ext
 
 # include directories
-INCLUDE    = -IAceBus/src -IAceMessage/src
+INCLUDE    = -IAceBus/src -IAceMessage/src -IAceBMS
 VPATH      = ./AceBus/src ./AceMessage/src
 
 CFLAGS     = -DBUILD="$(BUILD)" -DPROGRAM="$(PROGRAM)" $(INCLUDE) -g

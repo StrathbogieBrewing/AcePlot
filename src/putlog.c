@@ -1,8 +1,8 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -11,6 +11,10 @@
 
 #include "log.h"
 #include "tinux.h"
+
+#include "msg_solar.h"
+msg_name_t msgNames[] = MSG_NAMES;
+#define msgCount (sizeof(msgNames) / sizeof(msg_name_t))
 
 #define kProgramName (0)
 #define kSerialDevice (1)
@@ -41,16 +45,40 @@ int main(int argc, char *argv[]) {
       log_commit(&rxFrame);
 
       char str[kBufferSize] = {0};
-      sprintf(str + strlen(str), "RX: ");
+      sprintf(str + strlen(str), "msg id : 0x%2.2X\tmsg seq : %u  \t",
+              rxFrame.data[MSG_ID_OFFSET], rxFrame.data[MSG_SEQ_OFFSET]);
       int found = 0;
       int index = 0;
-      while (index < sizeof(tinframe_t)) {
-        sprintf(str + strlen(str), "0x%2.2X  ",
-                ((unsigned char *)(&rxFrame))[index]);
+      while (index < msgCount) {
+        int value;
+        int format = msg_unpack((msg_data_t *)&rxFrame.data[MSG_ID_OFFSET],
+                                msgNames[index].pack, &value);
+        if (format != MSG_NULL) {
+          if (found)
+            sprintf(str + strlen(str), ", \t");
+          found++;
+          char valueBuffer[kBufferSize] = {0};
+          msg_format((msg_data_t *)&rxFrame.data[MSG_ID_OFFSET],
+                     msgNames[index].pack, valueBuffer);
+          sprintf(str + strlen(str), "%s=%s", msgNames[index].name,
+                  valueBuffer);
+        }
         index++;
       }
       sprintf(str + strlen(str), "\n");
       fprintf(stdout, "%s", str);
+
+      // char str[kBufferSize] = {0};
+      // sprintf(str + strlen(str), "RX: ");
+      // int found = 0;
+      // int index = 0;
+      // while (index < sizeof(tinframe_t)) {
+      //   sprintf(str + strlen(str), "0x%2.2X  ",
+      //           ((unsigned char *)(&rxFrame))[index]);
+      //   index++;
+      // }
+      // sprintf(str + strlen(str), "\n");
+      // fprintf(stdout, "%s", str);
     }
   }
   // teardown ports
@@ -63,7 +91,7 @@ int main(int argc, char *argv[]) {
 
 // char str[kBufferSize] = {0};
 // sprintf(str + strlen(str), "msg : 0x%2.2X\tseq : %u  \t",
-//         rxFrame.data[MSG_ID], rxFrame.data[MSG_SEQ]);
+//         rxFrame.data[MSG_ID_OFFSET], rxFrame.data[MSG_SEQ_OFFSET]);
 // int found = 0;
 // int index = 0;
 // while (index < msgCount) {
