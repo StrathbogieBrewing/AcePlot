@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
       log_commit(&rxFrame);
-
+      // decode string to stdout
       char str[kBufferSize] = {0};
       sprintf(str + strlen(str), "msg id : 0x%2.2X\tmsg seq : %u  \t",
               rxFrame.data[MSG_ID_OFFSET], rxFrame.data[MSG_SEQ_OFFSET]);
@@ -67,27 +67,27 @@ int main(int argc, char *argv[]) {
       }
       sprintf(str + strlen(str), "\n");
       fprintf(stdout, "%s", str);
-
-      // char str[kBufferSize] = {0};
-      // sprintf(str + strlen(str), "RX: ");
-      // int found = 0;
-      // int index = 0;
-      // while (index < sizeof(tinframe_t)) {
-      //   sprintf(str + strlen(str), "0x%2.2X  ",
-      //           ((unsigned char *)(&rxFrame))[index]);
-      //   index++;
-      // }
-      // sprintf(str + strlen(str), "\n");
-      // fprintf(stdout, "%s", str);
     }
   }
   // teardown ports
   tinux_close();
   log_end();
   fprintf(stdout, "\nExit %s\n", argv[0]);
-
   return EXIT_SUCCESS;
 }
+
+
+// char str[kBufferSize] = {0};
+// sprintf(str + strlen(str), "RX: ");
+// int found = 0;
+// int index = 0;
+// while (index < sizeof(tinframe_t)) {
+//   sprintf(str + strlen(str), "0x%2.2X  ",
+//           ((unsigned char *)(&rxFrame))[index]);
+//   index++;
+// }
+// sprintf(str + strlen(str), "\n");
+// fprintf(stdout, "%s", str);
 
 // char str[kBufferSize] = {0};
 // sprintf(str + strlen(str), "msg : 0x%2.2X\tseq : %u  \t",
