@@ -3,27 +3,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <arpa/inet.h>
 #include <sys/socket.h>
-
 #include <time.h>
 
 #include "log.h"
 #include "tinux.h"
-
 #include "msg_solar.h"
-msg_name_t msgNames[] = MSG_NAMES;
-#define msgCount (sizeof(msgNames) / sizeof(msg_name_t))
 
 #define kProgramName (0)
 #define kSerialDevice (1)
 #define kLogPath (2)
-
 #define kBufferSize (256)
 
+static log_t logger;
+static msg_name_t msgNames[] = MSG_NAMES;
+static const int msgCount = (sizeof(msgNames) / sizeof(msg_name_t));
 static volatile int keepRunning = 1;
-void intHandler(int dummy) { keepRunning = 0; }
+
+static void intHandler(int dummy) { keepRunning = 0; }
 
 int main(int argc, char *argv[]) {
   if (argc < 3) {
@@ -36,14 +34,14 @@ int main(int argc, char *argv[]) {
   }
   signal(SIGINT, intHandler);
   signal(SIGTERM, intHandler);
-  log_begin(argv[kLogPath], sizeof(tinframe_t));
+  log_begin(&logger, argv[kLogPath], sizeof(tinframe_t));
   unsigned char sequence = 0;
   while (keepRunning) {
     tinframe_t rxFrame;
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
-      log_commit(&rxFrame);
-      // decode string to stdout
+      log_commit(&logger, &rxFrame);
+      // decode recieved string to stdout
       char str[kBufferSize] = {0};
       sprintf(str + strlen(str), "msg id : 0x%2.2X\tmsg seq : %u  \t",
               rxFrame.data[MSG_ID_OFFSET], rxFrame.data[MSG_SEQ_OFFSET]);
@@ -71,7 +69,7 @@ int main(int argc, char *argv[]) {
   }
   // teardown ports
   tinux_close();
-  log_end();
+  log_end(&logger);
   fprintf(stdout, "\nExit %s\n", argv[0]);
   return EXIT_SUCCESS;
 }
