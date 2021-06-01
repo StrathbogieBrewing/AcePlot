@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <sys/time.h>
 
 #include "log.h"
 #include "msg_solar.h"
@@ -71,11 +73,13 @@ void frameToJson(tinframe_t *frame, long int time, char *str) {
   *str++ = '\0';
 }
 
-int putLog(char *port, char *path) {
+int putLog(const char *path, const char *port) {
   log_t logger;
   if (tinux_open(port) == -1) {
     return EXIT_FAILURE;
   }
+  signal(SIGINT, intHandler);
+  signal(SIGTERM, intHandler);
   log_begin(&logger, path, sizeof(tinframe_t));
   while (keepRunning) {
     tinframe_t rxFrame;
@@ -98,35 +102,72 @@ int putLog(char *port, char *path) {
   return EXIT_SUCCESS;
 }
 
-int getLog(char *path, time_t startTime, time_t endTime) {
+int getLog(const char *path, time_t startTime, time_t endTime) {
   log_t logger;
   log_begin(&logger, path, sizeof(tinframe_t));
-  struct timeval tv = {0};
-  tv.tv_sec = startTime;
-  while (tv.tv_sec < endTime) {
-    unsigned char data[sizeof(tinframe_t)];
-    int bytesRead = log_read(&logger, &tv, data);
+  struct timespec ts = {0};
+  ts.tv_sec = startTime;
+  fprintf(stdout, "{[\n");
+  while (ts.tv_sec <= endTime){
+    tinframe_t data;
+    int bytesRead = log_read(&logger, &ts, &data);
+    // fprintf(stdout, "Read bytes %d, time %ld\n", bytesRead, ts.tv_sec);
     if (bytesRead) {
-
-    } else {
-      // all log data has been read
+      char str[kBufferSize] = {0};
+      frameToJson(&data, log_millis(&ts), str);
+      fprintf(stdout, "%s,\n", str);
     }
   }
+  fprintf(stdout, "]}\n");
   return EXIT_SUCCESS;
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 3) {
-    fprintf(stdout, "Usage: %s <serial device> <log path>\n",
-            argv[kProgramName]);
-    return EXIT_FAILURE;
+  static char *loggerPath = "log";
+  static char *loggerSerial = NULL;
+  static bool daemonize = false;
+
+  int opt;
+  opterr = 0;
+  while ((opt = getopt(argc, argv, "p:s:d")) != -1)
+    switch (opt) {
+    case 'p':
+      loggerPath = optarg;
+      break;
+    case 's':
+      loggerSerial = optarg;
+      break;
+    case 'd':
+      daemonize = true;
+      break;
+    case '?':
+      if (optopt == 'p')
+        fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+      else if (isprint(optopt))
+        fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+      else
+        fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+      return EXIT_FAILURE;
+    default:
+      fprintf(stderr, "Invalid option.\n");
+      abort();
+      return EXIT_FAILURE;
+    }
+
+  int returnValue  = EXIT_SUCCESS;
+  if(loggerSerial != NULL){
+    if (daemonize) {
+      daemon(1, 0);
+    }
+    returnValue = putLog(loggerPath, loggerSerial);
+  } else {
+    struct timespec now;
+    clock_gettime (CLOCK_REALTIME, &now);
+    time_t startTime = now.tv_sec - 3600LL;
+    time_t endTime = now.tv_sec;
+    returnValue = getLog(loggerPath, startTime, endTime);
   }
 
-  signal(SIGINT, intHandler);
-  signal(SIGTERM, intHandler);
-
-  int err = putLog(argv[kSerialDevice], argv[kLogPath]);
-
   fprintf(stdout, "\nExit %s\n", argv[0]);
-  return err;
+  return returnValue;
 }

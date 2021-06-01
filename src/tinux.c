@@ -12,7 +12,7 @@
 static int fd = -1;
 static struct termios original_termios;
 
-int tinux_open(char *port) {
+int tinux_open(const char *port) {
   // open the serial port
   int rc = -1;
   struct termios termios;

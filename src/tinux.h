@@ -14,7 +14,7 @@ tinux_kReadCRCError,
 tinux_kReadOverunError,
 };
 
-int tinux_open(char *port);
+int tinux_open(const char *port);
 int tinux_read(tinframe_t *rxFrame);
 void tinux_close(void);
 
