@@ -107,18 +107,23 @@ int getLog(const char *path, time_t startTime, time_t endTime) {
   log_begin(&logger, path, sizeof(tinframe_t));
   struct timespec ts = {0};
   ts.tv_sec = startTime;
-  fprintf(stdout, "{[\n");
+  fprintf(stdout, "Content-Type: application/json\r\n\r\n");
+  fprintf(stdout, "{\"TimeSeries\":[");
+  int lines = 0;
   while (ts.tv_sec <= endTime){
     tinframe_t data;
     int bytesRead = log_read(&logger, &ts, &data);
-    // fprintf(stdout, "Read bytes %d, time %ld\n", bytesRead, ts.tv_sec);
     if (bytesRead) {
       char str[kBufferSize] = {0};
       frameToJson(&data, log_millis(&ts), str);
-      fprintf(stdout, "%s,\n", str);
+      if(lines++){
+        fprintf(stdout, ",%s", str);
+      } else {
+        fprintf(stdout, "%s", str);
+      }
     }
   }
-  fprintf(stdout, "]}\n");
+  fprintf(stdout, "]}");
   return EXIT_SUCCESS;
 }
 
@@ -168,6 +173,5 @@ int main(int argc, char *argv[]) {
     returnValue = getLog(loggerPath, startTime, endTime);
   }
 
-  fprintf(stdout, "\nExit %s\n", argv[0]);
   return returnValue;
 }

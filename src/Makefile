@@ -6,7 +6,7 @@ BUILD       = $(shell date +'%y%m%d%H%M')
 
 CSRC       = logger.c tinframe.c tinux.c msg.c log.c mkdir.c
 
-BUILDDIR   = bin
+BUILDDIR   = cgi-bin
 SOURCEDIR  = src
 EXTDIR     = ext
 
