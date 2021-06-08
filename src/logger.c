@@ -1,13 +1,13 @@
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-#include <ctype.h>
-#include <sys/time.h>
 
 #include "log.h"
 #include "msg_solar.h"
@@ -34,6 +34,15 @@ char *ltoa(char *str, long unsigned int value) {
   }
   memcpy(str, dest, buf + bufsize - dest);
   return str + (buf + bufsize - dest);
+}
+
+bool logFilter(tinframe_t *frame) {
+  // remove unnecessary excessive log data
+  if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
+      (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
+    return false;
+  }
+  return true;
 }
 
 void frameToJson(tinframe_t *frame, long int time, char *str) {
@@ -85,7 +94,10 @@ int putLog(const char *path, const char *port) {
     tinframe_t rxFrame;
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
-      long int t = log_commit(&logger, &rxFrame);
+      long int t = 0;
+      if (logFilter(&rxFrame)) {
+        t = log_commit(&logger, &rxFrame);
+      }
       // decode recieved data and send to stdout
       char str[kBufferSize] = {0};
       frameToJson(&rxFrame, t, str);
@@ -110,13 +122,13 @@ int getLog(const char *path, time_t startTime, time_t endTime) {
   fprintf(stdout, "Content-Type: application/json\r\n\r\n");
   fprintf(stdout, "{\"TimeSeries\":[");
   int lines = 0;
-  while (ts.tv_sec <= endTime){
+  while (ts.tv_sec <= endTime) {
     tinframe_t data;
     int bytesRead = log_read(&logger, &ts, &data);
     if (bytesRead) {
       char str[kBufferSize] = {0};
       frameToJson(&data, log_millis(&ts), str);
-      if(lines++){
+      if (lines++) {
         fprintf(stdout, ",%s", str);
       } else {
         fprintf(stdout, "%s", str);
@@ -159,15 +171,15 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
     }
 
-  int returnValue  = EXIT_SUCCESS;
-  if(loggerSerial != NULL){
+  int returnValue = EXIT_SUCCESS;
+  if (loggerSerial != NULL) {
     if (daemonize) {
       daemon(1, 0);
     }
     returnValue = putLog(loggerPath, loggerSerial);
   } else {
     struct timespec now;
-    clock_gettime (CLOCK_REALTIME, &now);
+    clock_gettime(CLOCK_REALTIME, &now);
     time_t startTime = now.tv_sec - 3600LL;
     time_t endTime = now.tv_sec;
     returnValue = getLog(loggerPath, startTime, endTime);
