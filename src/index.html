@@ -47,7 +47,7 @@
           plotData.forEach(rec => {
             // console.log(rec);
             let t = rec["t"];
-            let vbat = rec["Ibat"];
+            let vbat = rec["Vbat"];
             if((t) && (vbat)){
               timeData.push([t, vbat]);
             }
@@ -64,6 +64,7 @@
           g3 = new Dygraph(
             document.getElementById("graphdiv3"),
             timeData, {
+              labels: ["Time", "Vbat"],
               axes: {
                 x: {
                   axisLabelFormatter: function(d, gran) {
