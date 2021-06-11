@@ -97,11 +97,11 @@ int putLog(const char *path, const char *port) {
       long int t = 0;
       if (logFilter(&rxFrame)) {
         t = log_commit(&logger, &rxFrame);
+        // decode recieved data and send to stdout
+        char str[kBufferSize] = {0};
+        frameToJson(&rxFrame, t, str);
+        fprintf(stdout, "%s\n", str);
       }
-      // decode recieved data and send to stdout
-      char str[kBufferSize] = {0};
-      frameToJson(&rxFrame, t, str);
-      fprintf(stdout, "%s\n", str);
     } else if (result == tinux_kReadCRCError) {
       fprintf(stdout, "crc error\n");
     } else if (result == tinux_kReadOverunError) {
