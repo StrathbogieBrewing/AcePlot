@@ -24,13 +24,13 @@ static volatile int keepRunning = 1;
 
 static void intHandler(int dummy) { keepRunning = 0; }
 
-char *ltoa(char *str, long unsigned int value) {
+char *ltoa(char *str, uint64_t value) {
   const int bufsize = 64;
   char buf[bufsize];
   char *dest = buf + bufsize;
   while (value) {
-    *--dest = '0' + (value % 10);
-    value /= 10;
+    *--dest = '0' + (value % 10LL);
+    value /= 10LL;
   }
   memcpy(str, dest, buf + bufsize - dest);
   return str + (buf + bufsize - dest);
@@ -45,7 +45,7 @@ bool logFilter(tinframe_t *frame) {
   return true;
 }
 
-void frameToJson(tinframe_t *frame, long int time, char *str) {
+void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '{';
   int found = 0;
   int index = 0;
@@ -94,7 +94,7 @@ int putLog(const char *path, const char *port) {
     tinframe_t rxFrame;
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
-      long int t = 0;
+      uint64_t t = 0;
       if (logFilter(&rxFrame)) {
         t = log_commit(&logger, &rxFrame);
         // decode recieved data and send to stdout

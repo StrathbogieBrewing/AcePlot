@@ -43,11 +43,24 @@
           //   });
           // })
 
+          // console.log(plotData);
+
+          let valueKeys = [];
+          plotData.forEach(rec => {
+            Object.keys(rec).forEach(k => {
+              if(valueKeys.indexOf(k) == -1){
+                valueKeys.push(k);
+              }
+            });
+          });
+
+          console.log(valueKeys);
+
 
           plotData.forEach(rec => {
             // console.log(rec);
             let t = rec["t"];
-            let vbat = rec["Vbat"];
+            let vbat = rec["Ibat"];
             if((t) && (vbat)){
               timeData.push([t, vbat]);
             }
