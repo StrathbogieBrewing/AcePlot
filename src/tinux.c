@@ -63,13 +63,15 @@ int tinux_read(tinframe_t *rxFrame) {
   if (fd < 0) {
     return tinux_kReadNoData;
   }
-  // read 2 frames into ring buffer
-  while ((unsigned char)(rxHead - rxTail) < tinframe_kFrameSize * 2){
+  // read 3 frames into ring buffer
+  while ((unsigned char)(rxHead - rxTail) <= tinframe_kFrameSize * 3){
     int bytesRead = read(fd, &ringBuffer[rxHead], 1);
-    if(bytesRead != 0){
+    if(bytesRead > 0){
       rxHead++;
-    } else {
+    } else if(bytesRead == 0){
       return tinux_kReadNoData;
+    } else {
+      return tinux_kReadUartError;
     }
   }
   // look for a good frame

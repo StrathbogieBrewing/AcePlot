@@ -1,101 +1,20 @@
 <html>
-
-<head>
-  <meta charset="utf-8">
-  <!-- <script src="//cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.css" /> -->
-  <script type="text/javascript" src="dygraph.min.js"></script>
-  <link rel="stylesheet" src="dygraph.min.css" />
-</head>
-
-<body>
-  <div id="graphdiv3" style="width:500px; height:300px;"></div>
-  <div id="joydiv" style="width:500px; height:300px;"></div>
-
-  <script type="text/javascript">
-
-    async function getData() {
-
-      // var vbat;
-      // var tbat;
-      // var duration = '7200'
-      // await fetch('cgi-bin/api?source=vbat;duration=1440').then(response => response.json().then(data => vbat = data));
-      // await fetch('cgi-bin/api?source=tbat;duration=1440').then(response => response.json().then(data => tbat = data));
-      //
-      // const fetches = [
-      //   fetch('cgi-bin/api?source=vbat;duration=' + duration).then(response => response.json().then(data => vbat = data)),
-      //   fetch('cgi-bin/api?source=tbat;duration=' + duration).then(response => response.json().then(data => tbat = data))
-      // ];
-      //
-      // await Promise.all(fetches);
-      let timeData = [];
-      // await fetch('cgi-bin/api?source=vc1,vc2,vc3,vc4,vc5,vc6,vc7,vc8;duration=' + duration).then(response => response.json().then(data => plotData = data)),
-      await fetch('cgi-bin/logger')
-        .then(response => response.json())
-        .then(data => {
-          plotData = data["TimeSeries"];
-          // let valueKeys = [];
-          // plotData.forEach(r => {
-          //   Object.keys(r).forEach(k => {
-          //     if(valueKeys.indexOf(k) == -1){
-          //       valueKeys.push(k);
-          //     }
-          //   });
-          // })
-
-          // console.log(plotData);
-
-          let valueKeys = [];
-          plotData.forEach(rec => {
-            Object.keys(rec).forEach(k => {
-              if(valueKeys.indexOf(k) == -1){
-                valueKeys.push(k);
-              }
-            });
-          });
-
-          console.log(valueKeys);
-
-
-          plotData.forEach(rec => {
-            // console.log(rec);
-            let t = rec["t"];
-            let vbat = rec["Ibat"];
-            if((t) && (vbat)){
-              timeData.push([t, vbat]);
-            }
-
-            // Object.keys(r).forEach(k => {
-            //   if(valueKeys.indexOf(k) == -1){
-            //     valueKeys.push(k);
-            //   }
-            // });
-          })
-
-          // console.log(timeData);
-
-          g3 = new Dygraph(
-            document.getElementById("graphdiv3"),
-            timeData, {
-              labels: ["Time", "Vbat"],
-              axes: {
-                x: {
-                  axisLabelFormatter: function(d, gran) {
-                    return new Date(1 * d).toLocaleTimeString();
-                  },
-                  valueFormatter: function(s) {
-                    return new Date(1 * s).toLocaleString('en-AU');
-                  }
-                }
-              }
-            }
-          );
-        }
-      );
-    }
-
-    getData();
-  </script>
-</body>
-
+  <head>
+    <meta charset="utf-8">
+    <script type="text/javascript" src="dygraph.min.js"></script>
+    <link rel="stylesheet" src="dygraph.min.css" />
+    <style>
+      body{color:black;background-color:white;font-family:monospace;font-size:16px}
+      tbody tr:nth-child(odd){background-color:grey}
+      h1{font-size:40px;font-weight:bold}
+      *{box-sizing:border-box;}
+    </style>
+  </head>
+  <body>
+    <div id="contdiv">
+      <div id="graphdiv" style="width:500px; height:300px;"></div>
+      <div id="datadiv" style="width:500px; height:300px;"></div>
+    </div>
+    <script type="module" src="aceplot.js"></script>
+  </body>
 </html>

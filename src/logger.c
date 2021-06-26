@@ -82,6 +82,28 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '\0';
 }
 
+bool logData(log_t *logger, tinframe_t *frame){
+  // remove unnecessary / excessive log data from bms
+  if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
+      (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
+    return false;
+  }
+  // commit to log
+  uint64_t t = log_commit(logger, frame);
+  // decode recieved data and send to stdout
+  char str[kBufferSize] = {0};
+  frameToJson(frame, t, str);
+  fprintf(stdout, "%s\n", str);
+  return true;
+}
+
+void logError(log_t *logger, unsigned char error){
+  tinframe_t frame;
+  msg_data_t *msg = (msg_data_t *)&frame.data[MSG_ID_OFFSET];
+  msg_pack(msg, LOG_ERROR, error);
+  logData(logger, &frame);
+}
+
 int putLog(const char *path, const char *port) {
   log_t logger;
   if (tinux_open(port) == -1) {
@@ -94,18 +116,21 @@ int putLog(const char *path, const char *port) {
     tinframe_t rxFrame;
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
-      uint64_t t = 0;
-      if (logFilter(&rxFrame)) {
-        t = log_commit(&logger, &rxFrame);
-        // decode recieved data and send to stdout
-        char str[kBufferSize] = {0};
-        frameToJson(&rxFrame, t, str);
-        fprintf(stdout, "%s\n", str);
-      }
+      logData(&logger, &rxFrame);
+      // uint64_t t = 0;
+      // if (logFilter(&rxFrame)) {
+      //   t = log_commit(&logger, &rxFrame);
+      //   // decode recieved data and send to stdout
+      //   char str[kBufferSize] = {0};
+      //   frameToJson(&rxFrame, t, str);
+      //   fprintf(stdout, "%s\n", str);
+      // }
     } else if (result == tinux_kReadCRCError) {
-      fprintf(stdout, "crc error\n");
+      fprintf(stdout, "CRC Error\n");
+      logError(&logger, result);
     } else if (result == tinux_kReadOverunError) {
-      fprintf(stdout, "overun error\n");
+      fprintf(stdout, "Overun Error\n");
+      logError(&logger, result);
     }
   }
   // teardown port and close log

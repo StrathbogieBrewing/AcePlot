@@ -12,6 +12,7 @@ tinux_kOK = 0,
 tinux_kReadNoData,
 tinux_kReadCRCError,
 tinux_kReadOverunError,
+tinux_kReadUartError,
 };
 
 int tinux_open(const char *port);
