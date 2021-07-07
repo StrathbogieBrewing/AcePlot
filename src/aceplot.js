@@ -46,11 +46,10 @@ function plotData(sources){
       }
     }
   });
-
 }
 
-function checkBox(name) {
-  let content = document.createElement('div');
+function checkBox(name, enc) {
+  let content = document.createElement(enc);
   let checkbox = document.createElement('input');
   checkbox.setAttribute("type", "checkbox");
   checkbox.setAttribute("id", name);
@@ -67,54 +66,29 @@ function checkBox(name) {
 
 async function getData() {
   let timeData = [];
-  await fetch('cgi-bin/logger').then(response => response.json()).then(data => {
+  await fetch('cgi-bin/logger?duration=720000').then(response => response.json()).then(data => {
     logData = data.TimeSeries;
-
     let content = document.createElement('div');
     content.setAttribute("id", "datadiv");
+    let checkBoxGrid = document.createElement('ul');
+    checkBoxGrid.setAttribute("class", 'checkbox-grid');
     logSources = [];
     logData.forEach(rec => {
       Object.keys(rec).forEach(k => {
         if (logSources.indexOf(k) == -1) {
           logSources.push(k);
-          let checkbox = checkBox(k);
-          console.log(checkbox);
+          let checkbox = checkBox(k, 'li');
           if(k == "t"){
             checkbox.firstChild.checked = true;
             checkbox.firstChild.disabled = true;
-
-          //   content.append(checkBox(k));
           }
-          content.append(checkbox);
+          checkBoxGrid.append(checkbox);
         }
       });
     });
-
+    content.append(checkBoxGrid);
     document.querySelector('#datadiv').replaceWith(content);
-
-    // console.log(valueKeys);
-
-    // logData.forEach(rec => {
-    //   // console.log(rec);
-    //   let t = rec["t"];
-    //   let vbat = rec["Ibat"];
-    //   if ((t) && (vbat)) {
-    //     timeData.push([ t, vbat ]);
-    //   }
-    //
-    // })
-    //
-    // let g3 = new Dygraph(document.getElementById("graphdiv"), timeData, {
-    //   labels : [ "Time", "Vbat" ],
-    //   axes : {
-    //     x : {
-    //       axisLabelFormatter : function(
-    //           d, gran) { return new Date(1 * d).toLocaleTimeString(); },
-    //       valueFormatter : function(
-    //           s) { return new Date(1 * s).toLocaleString('en-AU'); }
-    //     }
-    //   }
-    // });
+    plotChangeEvent();
   });
 }
 

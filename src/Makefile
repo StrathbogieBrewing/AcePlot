@@ -4,7 +4,7 @@ PROGRAM    = logger
 
 BUILD       = $(shell date +'%y%m%d%H%M')
 
-CSRC       = logger.c tinframe.c tinux.c msg.c log.c mkdir.c
+CSRC       = logger.c tinframe.c tinux.c msg.c log.c mkdir.c cgi.c
 
 BUILDDIR   = cgi-bin
 SOURCEDIR  = src

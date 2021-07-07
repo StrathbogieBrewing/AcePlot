@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "cgi.h"
 #include "log.h"
 #include "msg_solar.h"
 #include "tinux.h"
@@ -82,7 +83,7 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '\0';
 }
 
-bool logData(log_t *logger, tinframe_t *frame){
+bool logData(log_t *logger, tinframe_t *frame) {
   // remove unnecessary / excessive log data from bms
   if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
       (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
@@ -97,7 +98,7 @@ bool logData(log_t *logger, tinframe_t *frame){
   return true;
 }
 
-void logError(log_t *logger, unsigned char error){
+void logError(log_t *logger, unsigned char error) {
   tinframe_t frame;
   msg_data_t *msg = (msg_data_t *)&frame.data[MSG_ID_OFFSET];
   msg_pack(msg, LOG_ERROR, error);
@@ -117,14 +118,6 @@ int putLog(const char *path, const char *port) {
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
       logData(&logger, &rxFrame);
-      // uint64_t t = 0;
-      // if (logFilter(&rxFrame)) {
-      //   t = log_commit(&logger, &rxFrame);
-      //   // decode recieved data and send to stdout
-      //   char str[kBufferSize] = {0};
-      //   frameToJson(&rxFrame, t, str);
-      //   fprintf(stdout, "%s\n", str);
-      // }
     } else if (result == tinux_kReadCRCError) {
       fprintf(stdout, "CRC Error\n");
       logError(&logger, result);
@@ -205,8 +198,13 @@ int main(int argc, char *argv[]) {
   } else {
     struct timespec now;
     clock_gettime(CLOCK_REALTIME, &now);
-    time_t startTime = now.tv_sec - 3600LL;
-    time_t endTime = now.tv_sec;
+    time_t duration = (time_t)cgi_getLongInt("duration");
+    if (duration == 0)
+      duration = 3600L;
+    time_t startTime = (time_t)cgi_getLongInt("start");
+    if (startTime == 0)
+      startTime = now.tv_sec - duration;
+    time_t endTime = startTime + duration;
     returnValue = getLog(loggerPath, startTime, endTime);
   }
 
