@@ -66,7 +66,7 @@ function checkBox(name, enc) {
 
 async function getData() {
   let timeData = [];
-  await fetch('cgi-bin/logger?duration=720000').then(response => response.json()).then(data => {
+  await fetch('cgi-bin/logger?duration=86400').then(response => response.json()).then(data => {
     logData = data.TimeSeries;
     let content = document.createElement('div');
     content.setAttribute("id", "datadiv");

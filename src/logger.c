@@ -11,7 +11,8 @@
 
 #include "cgi.h"
 #include "log.h"
-#include "msg_solar.h"
+#include "AceBMS.h"
+#include "AcePlot.h"
 #include "tinux.h"
 
 #define kProgramName (0)
@@ -19,8 +20,8 @@
 #define kLogPath (2)
 #define kBufferSize (1024)
 
-static msg_name_t msgNames[] = MSG_NAMES;
-static const int msgCount = (sizeof(msgNames) / sizeof(msg_name_t));
+static sig_name_t sigNames[] = {ACEBMS_NAMES};
+static const int msgCount = (sizeof(sigNames) / sizeof(sig_name_t));
 static volatile int keepRunning = 1;
 
 static void intHandler(int dummy) { keepRunning = 0; }
@@ -37,38 +38,28 @@ char *ltoa(char *str, uint64_t value) {
   return str + (buf + bufsize - dest);
 }
 
-bool logFilter(tinframe_t *frame) {
-  // remove unnecessary excessive log data
-  if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
-      (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
-    return false;
-  }
-  return true;
-}
-
 void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '{';
   int found = 0;
   int index = 0;
   while (index < msgCount) {
-    int value;
-    int format = msg_unpack((msg_data_t *)&frame->data[MSG_ID_OFFSET],
-                            msgNames[index].pack, &value);
-    if (format != MSG_NULL) {
+    int16_t value;
+    fmt_t format = sig_decode((msg_t *)frame->data,
+                            sigNames[index].sig, &value);
+    if (format != FMT_NULL) {
       if (found++ == 0) {
         *str++ = '"';
         *str++ = 't';
         *str++ = '"';
         *str++ = ':';
         str = ltoa(str, time);
-      } else {
       }
       *str++ = ',';
-      char valueBuffer[kBufferSize] = {0};
-      msg_format((msg_data_t *)&frame->data[MSG_ID_OFFSET],
-                 msgNames[index].pack, valueBuffer);
+      char valueBuffer[FMT_MAXSTRLEN] = {0};
+      sig_toString((msg_t *)frame->data,
+                 sigNames[index].sig, valueBuffer);
       *str++ = '"';
-      strcpy(str, msgNames[index].name);
+      strcpy(str, sigNames[index].name);
       while (*str)
         str++;
       *str++ = '"';
@@ -85,10 +76,10 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
 
 bool logData(log_t *logger, tinframe_t *frame) {
   // remove unnecessary / excessive log data from bms
-  if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
-      (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
-    return false;
-  }
+  // if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
+  //     (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
+  //   return false;
+  // }
   // commit to log
   uint64_t t = log_commit(logger, frame);
   // decode recieved data and send to stdout
@@ -100,8 +91,8 @@ bool logData(log_t *logger, tinframe_t *frame) {
 
 void logError(log_t *logger, unsigned char error) {
   tinframe_t frame;
-  msg_data_t *msg = (msg_data_t *)&frame.data[MSG_ID_OFFSET];
-  msg_pack(msg, LOG_ERROR, error);
+  msg_t *msg = (msg_t *)frame.data;
+  sig_encode(msg, ACELOG_ERROR, error);
   logData(logger, &frame);
 }
 
@@ -207,6 +198,5 @@ int main(int argc, char *argv[]) {
     time_t endTime = startTime + duration;
     returnValue = getLog(loggerPath, startTime, endTime);
   }
-
   return returnValue;
 }
