@@ -9,19 +9,20 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "cgi.h"
-#include "log.h"
 #include "AceBMS.h"
 #include "AcePlot.h"
+#include "cgi.h"
+#include "log.h"
 #include "tinux.h"
+#include "udpBroadcast.h"
 
 #define kProgramName (0)
 #define kSerialDevice (1)
 #define kLogPath (2)
 #define kBufferSize (1024)
 
-static sig_name_t sigNames[] = {ACEBMS_NAMES};
-static const int msgCount = (sizeof(sigNames) / sizeof(sig_name_t));
+static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES};
+static const int sigCount = (sizeof(sigNames) / sizeof(sig_name_t));
 static volatile int keepRunning = 1;
 
 static void intHandler(int dummy) { keepRunning = 0; }
@@ -42,10 +43,10 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '{';
   int found = 0;
   int index = 0;
-  while (index < msgCount) {
+  while (index < sigCount) {
     int16_t value;
-    fmt_t format = sig_decode((msg_t *)frame->data,
-                            sigNames[index].sig, &value);
+    fmt_t format =
+        sig_decode((msg_t *)frame->data, sigNames[index].sig, &value);
     if (format != FMT_NULL) {
       if (found++ == 0) {
         *str++ = '"';
@@ -56,8 +57,7 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
       }
       *str++ = ',';
       char valueBuffer[FMT_MAXSTRLEN] = {0};
-      sig_toString((msg_t *)frame->data,
-                 sigNames[index].sig, valueBuffer);
+      sig_toString((msg_t *)frame->data, sigNames[index].sig, valueBuffer);
       *str++ = '"';
       strcpy(str, sigNames[index].name);
       while (*str)
@@ -74,12 +74,23 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '\0';
 }
 
+void hexDump(char* buffer, int size){
+  int i = 0;
+  fprintf(stdout, "HEX : ");
+  while(i < size){
+    fprintf(stdout, "%2.2x ", (unsigned char)buffer[i++]);
+  }
+  fprintf(stdout, "\n");
+}
+
 bool logData(log_t *logger, tinframe_t *frame) {
   // remove unnecessary / excessive log data from bms
-  // if ((frame->data[MSG_ID_OFFSET] == MSGID_BMS_STATUS) &&
-  //     (frame->data[MSG_SEQ_OFFSET] & 0x03)) {
-  //   return false;
-  // }
+  int16_t value;
+  fmt_t format = sig_decode((msg_t *)frame->data, ACEBMS_RQST, &value);
+  if((format != FMT_NULL) && (value & 0x0003)){
+    return false;
+  }
+  // hexDump(frame->data, tinframe_kDataSize);
   // commit to log
   uint64_t t = log_commit(logger, frame);
   // decode recieved data and send to stdout
@@ -101,6 +112,7 @@ int putLog(const char *path, const char *port) {
   if (tinux_open(port) == -1) {
     return EXIT_FAILURE;
   }
+  udpBroadcast_open(31415);
   signal(SIGINT, intHandler);
   signal(SIGTERM, intHandler);
   log_begin(&logger, path, sizeof(tinframe_t));
@@ -109,6 +121,7 @@ int putLog(const char *path, const char *port) {
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
       logData(&logger, &rxFrame);
+      udpBroadcast_send((unsigned char*)&rxFrame, tinframe_kFrameSize);
     } else if (result == tinux_kReadCRCError) {
       fprintf(stdout, "CRC Error\n");
       logError(&logger, result);
@@ -116,8 +129,15 @@ int putLog(const char *path, const char *port) {
       fprintf(stdout, "Overun Error\n");
       logError(&logger, result);
     }
+
+    // unsigned char data[udp_kBufferSize];
+    // int bytesRead;
+    // if((bytesRead = udp_read(data, udp_kBufferSize)) > 0){
+    //   hexDump(data, bytesRead);
+    // }
   }
   // teardown port and close log
+  udpBroadcast_close();
   tinux_close();
   log_end(&logger);
   return EXIT_SUCCESS;

@@ -5,6 +5,6 @@
 
 #define ACELOG_ERROR (ACELOG_STATUS | SIG_WORD | SIG_OFF0 | SIG_UNIT)
 
-// {"LogE", LOG_ERROR },
+#define ACELOG_NAMES  {"LogE", ACELOG_ERROR}
 
 #endif  // ACEPLOT_H
