@@ -42,54 +42,12 @@ int udpBroadcast_open(int udp_port) {
     return -1;
   }
 
-  // err = setsockopt(udp_socket, SOL_SOCKET, SO_REUSEPORT, &reuse,
-  //                      sizeof(reuse));
-  // if (err == -1) {
-  //   fprintf(stderr, "UDP Socket could not be set for read port reuse\n");
-  //   return -1;
-  // }
-
   // broadcast
   memset(&si_broadcast, 0, sizeof(si_broadcast));
   si_broadcast.sin_family = AF_INET;
   si_broadcast.sin_addr.s_addr = inet_addr("255.255.255.255");
   si_broadcast.sin_port = htons(udp_port);
-
-  // // bind socket to udp port
-  // memset((char *)&si_me, 0, sizeof(si_me));
-  // si_me.sin_family = AF_INET;
-  // si_me.sin_port = htons(udp_port);
-  // si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  // if (bind(udp_socket, (struct sockaddr *)&si_me, sizeof(si_me)) == -1) {
-  //   fprintf(stderr, "UDP Socket could not be bound to port\n");
-  //   close(udp_socket);
-  //   udp_socket = -1;
-  //   return -1;
-  // }
 }
-
-// int udp_read(unsigned char *data, int maxBytes) {
-//   struct sockaddr_in si_other = {0};
-//   int slen = sizeof(si_other);
-//   int recv_len = 0;
-//
-//   if (udp_socket == -1) {
-//     fprintf(stderr, "UDP Socket not open\n");
-//     return -1;
-//   }
-//
-//   if ((recv_len = recvfrom(udp_socket, data, maxBytes, 0,
-//                            (struct sockaddr *)&si_other, &slen)) == -1) {
-//     if ((errno != EAGAIN) && (errno != EWOULDBLOCK)) {
-//       fprintf(stderr, "UDP Socket read failed\n");
-//       return -1;
-//     }
-//     recv_len = 0;
-//   }
-//
-//   return recv_len;
-// }
 
 int udpBroadcast_send(unsigned char *data, int bytes) {
   if (udp_socket == -1) {
