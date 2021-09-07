@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "AceBMS.h"
+#include "AceMPPT.h"
 #include "AcePlot.h"
 #include "cgi.h"
 #include "log.h"
@@ -21,7 +22,7 @@
 #define kLogPath (2)
 #define kBufferSize (1024)
 
-static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES};
+static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES, ACEMPPT_NAMES};
 static const int sigCount = (sizeof(sigNames) / sizeof(sig_name_t));
 static volatile int keepRunning = 1;
 
@@ -39,7 +40,7 @@ char *ltoa(char *str, uint64_t value) {
   return str + (buf + bufsize - dest);
 }
 
-void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
+int frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   *str++ = '{';
   int found = 0;
   int index = 0;
@@ -72,6 +73,7 @@ void frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   }
   *str++ = '}';
   *str++ = '\0';
+  return found;
 }
 
 void hexDump(char* buffer, int size){
@@ -95,8 +97,12 @@ bool logData(log_t *logger, tinframe_t *frame) {
   uint64_t t = log_commit(logger, frame);
   // decode recieved data and send to stdout
   char str[kBufferSize] = {0};
-  frameToJson(frame, t, str);
-  fprintf(stdout, "%s\n", str);
+  int found = frameToJson(frame, t, str);
+  if(found){
+    fprintf(stdout, "%s\n", str);
+  } else {
+    hexDump((char*)frame, sizeof(tinframe_t));
+  }
   return true;
 }
 

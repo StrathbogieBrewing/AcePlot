@@ -11,7 +11,7 @@ SOURCEDIR  = src
 EXTDIR     = ext
 
 # include directories
-INCLUDE    = -IAceBus/src -IAceMessage/src -IAceBMS -IAceLog/src
+INCLUDE    = -IAceBus/src -IAceMessage/src -IAceBMS -IAceMPPT -IAceLog/src
 VPATH      = ./AceBus/src ./AceMessage/src ./AceLog/src
 
 CFLAGS     = -DBUILD="$(BUILD)" -DPROGRAM="$(PROGRAM)" $(INCLUDE) -g
