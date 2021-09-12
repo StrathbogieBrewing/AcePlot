@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "AceBMS.h"
+#include "AceDump.h"
 #include "AceMPPT.h"
 #include "AcePlot.h"
 #include "cgi.h"
@@ -22,7 +23,7 @@
 #define kLogPath (2)
 #define kBufferSize (1024)
 
-static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES, ACEMPPT_NAMES};
+static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES, ACEMPPT_NAMES, ACEDUMP_NAMES};
 static const int sigCount = (sizeof(sigNames) / sizeof(sig_name_t));
 static volatile int keepRunning = 1;
 
@@ -76,10 +77,10 @@ int frameToJson(tinframe_t *frame, uint64_t time, char *str) {
   return found;
 }
 
-void hexDump(char* buffer, int size){
+void hexDump(char *buffer, int size) {
   int i = 0;
   fprintf(stdout, "HEX : ");
-  while(i < size){
+  while (i < size) {
     fprintf(stdout, "%2.2x ", (unsigned char)buffer[i++]);
   }
   fprintf(stdout, "\n");
@@ -89,7 +90,7 @@ bool logData(log_t *logger, tinframe_t *frame) {
   // remove unnecessary / excessive log data from bms
   int16_t value;
   fmt_t format = sig_decode((msg_t *)frame->data, ACEBMS_RQST, &value);
-  if((format != FMT_NULL) && (value & 0x0003)){
+  if ((format != FMT_NULL) && (value & 0x0003)) {
     return false;
   }
   // hexDump(frame->data, tinframe_kDataSize);
@@ -98,10 +99,10 @@ bool logData(log_t *logger, tinframe_t *frame) {
   // decode recieved data and send to stdout
   char str[kBufferSize] = {0};
   int found = frameToJson(frame, t, str);
-  if(found){
+  if (found) {
     fprintf(stdout, "%s\n", str);
   } else {
-    hexDump((char*)frame, sizeof(tinframe_t));
+    hexDump((char *)frame, sizeof(tinframe_t));
   }
   return true;
 }
@@ -127,7 +128,7 @@ int putLog(const char *path, const char *port) {
     int result = tinux_read(&rxFrame);
     if (result == tinux_kOK) {
       logData(&logger, &rxFrame);
-      udpBroadcast_send((unsigned char*)&rxFrame, tinframe_kFrameSize);
+      udpBroadcast_send((unsigned char *)&rxFrame, tinframe_kFrameSize);
     } else if (result == tinux_kReadCRCError) {
       fprintf(stdout, "CRC Error\n");
       logError(&logger, result);

@@ -5,7 +5,14 @@ REMOTEHOST=pi@raspberrypi.local
 
 # upload source code to target
 ssh $REMOTEHOST mkdir -p aceplot
-rsync -raL --exclude 'src/cgi-bin' ./src $REMOTEHOST:aceplot
+rsync -raL --exclude 'cgi-bin' ./ $REMOTEHOST:aceplot/src
+
+ssh $REMOTEHOST /bin/bash <<'EOT'
+set -x
+cd aceplot/src
+make
+
+EOT
 
 # ssh $REMOTEHOST /bin/bash <<'EOT'
 # set -x
