@@ -11,6 +11,7 @@
 
 #include "AceBMS.h"
 #include "AceDump.h"
+#include "AceGrid.h"
 #include "AceMPPT.h"
 #include "AcePlot.h"
 #include "cgi.h"
@@ -23,7 +24,8 @@
 #define kLogPath (2)
 #define kBufferSize (1024)
 
-static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES, ACEMPPT_NAMES, ACEDUMP_NAMES};
+static sig_name_t sigNames[] = {ACEBMS_NAMES, ACELOG_NAMES, ACEMPPT_NAMES,
+                                ACEDUMP_NAMES, ACEGRID_NAMES};
 static const int sigCount = (sizeof(sigNames) / sizeof(sig_name_t));
 static volatile int keepRunning = 1;
 
