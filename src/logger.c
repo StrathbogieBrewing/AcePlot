@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "AceBMS.h"
+#include "AceBusError.h"
 #include "AceDump.h"
 #include "AceGrid.h"
 #include "AceMPPT.h"
@@ -90,11 +91,11 @@ void hexDump(char *buffer, int size) {
 
 bool logData(log_t *logger, tinframe_t *frame) {
   // remove unnecessary / excessive log data from bms
-  int16_t value;
-  fmt_t format = sig_decode((msg_t *)frame->data, ACEBMS_RQST, &value);
-  if ((format != FMT_NULL) && (value & 0x0003)) {
-    return false;
-  }
+    // int16_t value;
+    // fmt_t format = sig_decode((msg_t *)frame->data, ACEBMS_RQST, &value);
+    // if ((format != FMT_NULL) && (value & 0x0003)) {
+    //   return false;
+    // }
   // hexDump(frame->data, tinframe_kDataSize);
   // commit to log
   uint64_t t = log_commit(logger, frame);
@@ -133,10 +134,10 @@ int putLog(const char *path, const char *port) {
       udpBroadcast_send((unsigned char *)&rxFrame, tinframe_kFrameSize);
     } else if (result == tinux_kReadCRCError) {
       fprintf(stdout, "CRC Error\n");
-      logError(&logger, result);
+      logError(&logger, AceBus_kReadCRCError);
     } else if (result == tinux_kReadOverunError) {
       fprintf(stdout, "Overun Error\n");
-      logError(&logger, result);
+      logError(&logger, AceBus_kReadOverunError);
     }
 
     // unsigned char data[udp_kBufferSize];
